@@ -260,20 +260,22 @@ read withFlag write                 // 0b0011
 1.toBinaryString()                  // "1" (no 0b prefix)
 (-1).toHexString()                  // "ffffffff" (no 0x prefix)
 8.toOctalString()                   // "10" (no octal prefix)
-1L.toBinaryString()                 // "1"
-(-1L).toHexString()                 // "ffffffffffffffff"
-8L.toOctalString()                  // "10"
+1.toBinaryString(withPrefix = true) // "0b1"
+(-1).toHexString(withPrefix = true) // "0xffffffff"
+8.toOctalString(withPrefix = true)  // "0o10"
+1L.toBinaryString(withPrefix = true) // "0b1"
+(-1L).toHexString(withPrefix = true) // "0xffffffffffffffff"
+8L.toOctalString(withPrefix = true)  // "0o10"
 ```
 
 The `hasFlag` / `hasAnyFlag` / `withFlag` / `withoutFlag` / `toggleFlag` set
 exists for both `Int` and `Long`. Kotlin cannot define custom `&`, `|`, or `^`
 operators for these, so named operations make permission masks readable. The
 formatting functions use unsigned two's-complement output, matching Java's
-`Integer` / `Long` helpers; there is no common equivalent in Kotlin. They return
-Java-style digits without a `0b`, `0x`, or octal prefix, because they mirror
-`Integer.toBinaryString` / `toHexString` / `toOctalString`. If you need a
-Kotlin-style literal, prepend the prefix at the call site; Kotlin has no octal
-integer literal syntax.
+`Integer` / `Long` helpers; there is no common equivalent in Kotlin. The
+no-argument overloads return Java-style digits without a `0b`, `0x`, or octal
+prefix. Pass `withPrefix = true` for a prefixed display string; `0o` is a
+display convention, because Kotlin has no octal integer literal syntax.
 
 ### Results
 
@@ -334,6 +336,7 @@ The examples above cover these families; the receiver list is complete:
 | `hasFlag`, `hasAnyFlag`, `withFlag`, `withoutFlag`, `toggleFlag` | `Int`, `Long` |
 | `toDegrees`, `toRadians` | `Double`, `Float` |
 | `roundTo`, `roundToString` | `Double`, `Float` |
+| `toBinaryString`, `toHexString`, `toOctalString` | `Int`, `Long`; no-arg is unprefixed, `withPrefix = true` adds `0b` / `0x` / `0o` |
 | `splitAtFirst`, `splitAtLast` | `Char`, `String` |
 ## API highlights
 
@@ -376,15 +379,11 @@ Kotlin already provides `union`, `intersect`, and `subtract`; Kx Essentials does
 | `Double/Float.roundToString(decimals, mode)` | Fixed-point string with trailing zeros |
 | `Double/Float.toDegrees()` / `toRadians()` | Angle conversion |
 | `Int/Long.hasFlag(flag)` / `withFlag` / `withoutFlag` | Readable bit masks |
-| `Int/Long.toBinaryString()` / `toHexString()` | Java-compatible unsigned formatting |
+| `Int/Long.toBinaryString(withPrefix)` / `toHexString` / `toOctalString` | Java-compatible unsigned formatting; `withPrefix = true` adds `0b` / `0x` / `0o` |
 
 ## Compatibility
 
 - Kotlin 2.0 and later 2.x releases
-- Published with Kotlin 2.0.21 so JVM metadata and KLIB ABI remain consumable by Kotlin 2.0+
-- JDK 17 for JVM and Android builds
-- Android `minSdk 21`
-- Gradle 8.10.2
 
 ## License
 

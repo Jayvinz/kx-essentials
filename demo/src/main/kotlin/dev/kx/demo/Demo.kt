@@ -180,6 +180,18 @@ internal object Demo {
             Int.MIN_VALUE.toBinaryString(),
         )
         example("(-1L).toOctalString()", (-1L).toOctalString())
+        example(
+            "1.toBinaryString(withPrefix = true)",
+            1.toBinaryString(withPrefix = true),
+        )
+        example(
+            "(-1).toHexString(withPrefix = true)",
+            (-1).toHexString(withPrefix = true),
+        )
+        example(
+            "8.toOctalString(withPrefix = true)",
+            8.toOctalString(withPrefix = true),
+        )
 
         section("Angles")
         example("PI.toDegrees()", PI.toDegrees())

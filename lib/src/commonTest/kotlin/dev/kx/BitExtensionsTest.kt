@@ -114,3 +114,38 @@ class UnsignedStringTest {
         assertEquals("1000000000000000000000", Long.MIN_VALUE.toOctalString())
     }
 }
+
+class PrefixedRadixStringTest {
+
+    @Test
+    fun intPrefixedStringsUseTheExpectedMarkers() {
+        assertEquals("0b0", 0.toBinaryString(withPrefix = true))
+        assertEquals("0b1", 1.toBinaryString(withPrefix = true))
+        assertEquals("0b" + "1".repeat(32), (-1).toBinaryString(withPrefix = true))
+
+        assertEquals("0x0", 0.toHexString(withPrefix = true))
+        assertEquals("0xff", 255.toHexString(withPrefix = true))
+        assertEquals("0xffffffff", (-1).toHexString(withPrefix = true))
+
+        assertEquals("0o0", 0.toOctalString(withPrefix = true))
+        assertEquals("0o10", 8.toOctalString(withPrefix = true))
+        assertEquals("0o37777777777", (-1).toOctalString(withPrefix = true))
+    }
+
+    @Test
+    fun longPrefixedStringsUseTheExpectedMarkers() {
+        assertEquals("0b" + "1".repeat(64), (-1L).toBinaryString(withPrefix = true))
+        assertEquals("0xffffffffffffffff", (-1L).toHexString(withPrefix = true))
+        assertEquals("0o1777777777777777777777", (-1L).toOctalString(withPrefix = true))
+    }
+
+    @Test
+    fun falseKeepsTheJavaCompatibleResult() {
+        assertEquals(1.toBinaryString(), 1.toBinaryString(withPrefix = false))
+        assertEquals(255.toHexString(), 255.toHexString(withPrefix = false))
+        assertEquals(8.toOctalString(), 8.toOctalString(withPrefix = false))
+        assertEquals(1L.toBinaryString(), 1L.toBinaryString(withPrefix = false))
+        assertEquals(255L.toHexString(), 255L.toHexString(withPrefix = false))
+        assertEquals(8L.toOctalString(), 8L.toOctalString(withPrefix = false))
+    }
+}

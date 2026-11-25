@@ -159,3 +159,91 @@ public fun Long.toHexString(): String = toULong().toString(16)
  * Java's `Long.toOctalString`. The result has no prefix or leading zero.
  */
 public fun Long.toOctalString(): String = toULong().toString(8)
+
+/**
+ * Returns the unsigned binary representation of this `Int`, optionally with a
+ * leading `0b`.
+ *
+ * The no-argument overload keeps the Java-compatible, unprefixed result. This
+ * overload is for display code that wants a prefix without manually
+ * concatenating it.
+ *
+ * ```kotlin
+ * 1.toBinaryString(withPrefix = true)     // "0b1"
+ * (-1).toBinaryString(withPrefix = true)  // "0b11111111111111111111111111111111"
+ * ```
+ *
+ * @param withPrefix whether to prepend `0b`.
+ * @return the unsigned binary string, with `0b` when [withPrefix] is `true`.
+ */
+public fun Int.toBinaryString(withPrefix: Boolean): String =
+    if (withPrefix) "0b" + toBinaryString() else toBinaryString()
+
+/**
+ * Returns the unsigned hexadecimal representation of this `Int`, optionally
+ * with a leading `0x`.
+ *
+ * The no-argument overload keeps the Java-compatible, unprefixed result.
+ *
+ * ```kotlin
+ * 255.toHexString(withPrefix = true)  // "0xff"
+ * (-1).toHexString(withPrefix = true) // "0xffffffff"
+ * ```
+ *
+ * @param withPrefix whether to prepend `0x`.
+ * @return the unsigned hexadecimal string, with `0x` when [withPrefix] is `true`.
+ */
+public fun Int.toHexString(withPrefix: Boolean): String =
+    if (withPrefix) "0x" + toHexString() else toHexString()
+
+/**
+ * Returns the unsigned octal representation of this `Int`, optionally with a
+ * leading `0o`.
+ *
+ * `0o` is a common display prefix, not Kotlin octal literal syntax.
+ *
+ * ```kotlin
+ * 8.toOctalString(withPrefix = true) // "0o10"
+ * ```
+ *
+ * @param withPrefix whether to prepend `0o`.
+ * @return the unsigned octal string, with `0o` when [withPrefix] is `true`.
+ */
+public fun Int.toOctalString(withPrefix: Boolean): String =
+    if (withPrefix) "0o" + toOctalString() else toOctalString()
+
+/**
+ * Returns the unsigned binary representation of this `Long`, optionally with a
+ * leading `0b`.
+ *
+ * The no-argument overload keeps the Java-compatible, unprefixed result.
+ *
+ * @param withPrefix whether to prepend `0b`.
+ * @return the unsigned binary string, with `0b` when [withPrefix] is `true`.
+ */
+public fun Long.toBinaryString(withPrefix: Boolean): String =
+    if (withPrefix) "0b" + toBinaryString() else toBinaryString()
+
+/**
+ * Returns the unsigned hexadecimal representation of this `Long`, optionally
+ * with a leading `0x`.
+ *
+ * The no-argument overload keeps the Java-compatible, unprefixed result.
+ *
+ * @param withPrefix whether to prepend `0x`.
+ * @return the unsigned hexadecimal string, with `0x` when [withPrefix] is `true`.
+ */
+public fun Long.toHexString(withPrefix: Boolean): String =
+    if (withPrefix) "0x" + toHexString() else toHexString()
+
+/**
+ * Returns the unsigned octal representation of this `Long`, optionally with a
+ * leading `0o`.
+ *
+ * `0o` is a common display prefix, not Kotlin octal literal syntax.
+ *
+ * @param withPrefix whether to prepend `0o`.
+ * @return the unsigned octal string, with `0o` when [withPrefix] is `true`.
+ */
+public fun Long.toOctalString(withPrefix: Boolean): String =
+    if (withPrefix) "0o" + toOctalString() else toOctalString()

@@ -248,17 +248,20 @@ read withFlag write                 // 0b0011
 1.toBinaryString()                  // "1"（无 0b 前缀）
 (-1).toHexString()                  // "ffffffff"（无 0x 前缀）
 8.toOctalString()                   // "10"（无八进制前缀）
-1L.toBinaryString()                 // "1"
-(-1L).toHexString()                 // "ffffffffffffffff"
-8L.toOctalString()                  // "10"
+1.toBinaryString(withPrefix = true) // "0b1"
+(-1).toHexString(withPrefix = true) // "0xffffffff"
+8.toOctalString(withPrefix = true)  // "0o10"
+1L.toBinaryString(withPrefix = true) // "0b1"
+(-1L).toHexString(withPrefix = true) // "0xffffffffffffffff"
+8L.toOctalString(withPrefix = true)  // "0o10"
 ```
 
 `hasFlag` / `hasAnyFlag` / `withFlag` / `withoutFlag` / `toggleFlag` 同时提供 `Int` 和
 `Long` 版本。Kotlin 无法给这些类型自定义 `&`、`|`、`^` 运算符，所以用命名操作让权限位
 更易读。格式化函数按无符号补码输出，与 Java 的 `Integer` / `Long` 辅助方法一致；
-Kotlin 标准库没有 common 等价物。它们返回 Java 风格的无前缀数字串，分别对应
-`Integer.toBinaryString` / `toHexString` / `toOctalString`；需要 Kotlin 字面量时在调用点
-自行拼接前缀，Kotlin 本身没有八进制整数字面量。
+Kotlin 标准库没有 common 等价物。无参重载返回 Java 风格的无前缀数字串，分别对应
+`Integer.toBinaryString` / `toHexString` / `toOctalString`；传 `withPrefix = true` 可得到
+带 `0b`、`0x`、`0o` 前缀的版本。`0o` 只是显示约定，Kotlin 本身没有八进制整数字面量。
 
 ### Result
 
@@ -315,6 +318,7 @@ val session by safeLazy { "safe" }
 | `hasFlag`、`hasAnyFlag`、`withFlag`、`withoutFlag`、`toggleFlag` | `Int`、`Long` |
 | `toDegrees`、`toRadians` | `Double`、`Float` |
 | `roundTo`、`roundToString` | `Double`、`Float` |
+| `toBinaryString`、`toHexString`、`toOctalString` | `Int`、`Long`；无参无前缀，`withPrefix = true` 加 `0b` / `0x` / `0o` |
 | `splitAtFirst`、`splitAtLast` | `Char`、`String` |
 ## API 一览
 
@@ -409,9 +413,10 @@ val session by safeLazy { "safe" }
 | `Int/Long.withFlag(flag)` | 置位，返回新值 |
 | `Int/Long.withoutFlag(flag)` | 清位，返回新值 |
 | `Int/Long.toggleFlag(flag)` | 翻转位，返回新值 |
-| `Int/Long.toBinaryString()` | 无符号二进制表示，负数按 32/64 位补码 |
-| `Int/Long.toHexString()` | 无符号小写十六进制表示，与 Java 的 `Integer/Long.toHexString` 一致 |
-| `Int/Long.toOctalString()` | 无符号八进制表示 |
+| `Int/Long.toBinaryString(withPrefix = false)` | 无符号二进制表示，负数按 32/64 位补码；无参版本无前缀 |
+| `Int/Long.toHexString(withPrefix = false)` | 无符号小写十六进制表示；无参版本无前缀 |
+| `Int/Long.toOctalString(withPrefix = false)` | 无符号八进制表示；无参版本无前缀 |
+| `Int/Long.toBinaryString(withPrefix = true)` 等 | 分别返回 `0b...`、`0x...`、`0o...` |
 
 ```kotlin
 val read = 0b0001
