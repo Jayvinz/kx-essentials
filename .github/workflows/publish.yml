@@ -13,6 +13,8 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      HAS_CENTRAL: ${{ secrets.SONATYPE_USERNAME != '' && secrets.SONATYPE_PASSWORD != '' && secrets.SIGNING_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -35,6 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish signed artifacts to local repository
+        if: env.HAS_CENTRAL == 'true'
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
@@ -43,13 +46,19 @@ jobs:
           ./gradlew :lib:publishAllPublicationsToLocalRepository
 
       - name: Bundle Maven Central artifacts
+        if: env.HAS_CENTRAL == 'true'
         run: |
           mkdir -p build/central-bundle/top/jayvin/dev
           cp -R local-repo/top/jayvin/dev/kx-essentials build/central-bundle/top/jayvin/dev/
           find build/central-bundle -type f -name 'maven-metadata*' -delete
           (cd build/central-bundle && zip -qr ../central-bundle.zip top)
 
+      - name: Skip Maven Central
+        if: env.HAS_CENTRAL != 'true'
+        run: echo "SONATYPE_USERNAME / SONATYPE_PASSWORD / SIGNING_KEY are not all configured; GitHub Packages was published, Maven Central was skipped."
+
       - name: Upload bundle to Maven Central
+        if: env.HAS_CENTRAL == 'true'
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
