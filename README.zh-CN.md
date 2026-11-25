@@ -285,8 +285,8 @@ mixed.partitionResults() // values=[1], errors=[IllegalStateException("bad")]
 ### Lazy
 
 ```kotlin
-val config: String by fastLazy { "loaded" }
-val session: String by safeLazy { "safe" }
+val config by fastLazy { "loaded" }
+val session by safeLazy { "safe" }
 ```
 
 这里要用 `by`，不是 `=`：两个函数返回的是 `Lazy<T>` 委托。`lazy` 默认是带同步的实现。

@@ -299,8 +299,8 @@ error, which is useful for batch validation.
 ### Lazy values
 
 ```kotlin
-val config: String by fastLazy { "loaded" }
-val session: String by safeLazy { "safe" }
+val config by fastLazy { "loaded" }
+val session by safeLazy { "safe" }
 ```
 
 Use `by`, not `=`: both functions return a `Lazy<T>` delegate. `lazy` defaults
