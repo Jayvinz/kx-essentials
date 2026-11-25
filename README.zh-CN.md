@@ -10,15 +10,6 @@ Kx Essentials 是一个零依赖的 Kotlin Multiplatform 扩展库，覆盖字�
 - **零依赖**：只用标准库，不引入 AndroidX 或第三方库。
 - **显式 API**：开启 `explicitApi()`，所有公开声明都有明确类型和 KDoc。
 
-```kotlin
-"hello   kotlin WORLD".toTitleCase()        // "Hello   Kotlin World"
-listOf(1, 2, 3, 4).second()                 // 2
-mapOf("a" to 1, "b" to 2).inverse()         // {1=a, 2=b}
-3.14159.roundTo(2)                          // 3.14
-val retries: Int? = null
-retries.orZero()                            // 0
-```
-
 ## 依赖接入
 
 发布坐标：
@@ -57,17 +48,6 @@ dependencies {
 }
 ```
 
-### 使用
-
-包名仍是 `dev.kx`，按需导入：
-
-```kotlin
-import dev.kx.second
-import dev.kx.toTitleCase
-
-println(listOf("a", "b").second()) // b
-```
-
 ### 平台说明
 
 | 平台 | 说明 |
@@ -80,6 +60,88 @@ println(listOf("a", "b").second()) // b
 iOS target 只在 macOS 上构建；消费 iOS 产物的 KMP 项目不需要本机是 macOS，但如果要自行编译源码则需要 macOS 和 Xcode。
 
 产物使用 Kotlin 2.0.21 编译，Kotlin 2.0 及以上的消费方均可使用；更新的 Kotlin 编译器可以读取旧版本产物。
+
+## 快速开始
+
+以下示例取自 demo（`demo/src/main/kotlin/dev/kx/demo/Demo.kt`）。
+
+### 可空值
+
+```kotlin
+import dev.kx.*
+
+val missingCount: Int? = null
+missingCount.orZero()                       // 0
+missingCount.orDefault(10)                  // 10
+
+val missingName: String? = null
+missingName.orDefault("anonymous")          // "anonymous"
+missingName.fallback { "anonymous" }        // "anonymous"
+
+val presentName: String? = "Ada"
+presentName.orThrow { IllegalStateException() }.uppercase() // "ADA"
+```
+
+`orZero` / `orDefault` 的价值不是替代单个 `?:`，而是让后续调用继续留在链上；否则一旦
+fallback 后面还要接方法，就得多加括号。`orDefault` 的参数会立即求值；默认值昂贵或只应
+在 null 时计算时用 `fallback { ... }`。`orThrow` 则表达相反的契约：快速失败，不需要写
+`?: throw ...`。
+
+### 负索引与类型转换
+
+```kotlin
+val names = listOf("a", "b", "c")
+names.at(-1)          // "c"
+names.atOrNull(5)     // null
+
+val payload: Any = listOf("a", "b")
+payload.asType<List<String>>()?.second() // "b"
+(1 as Any).asType<String>()              // null
+payload.isType<List<String>>()           // true
+```
+
+`at` 把负索引收敛成一条明确契约：`-1` 是最后一个、`-size` 是第一个，越界不回绕。
+`asType` 是 `as` 的安全版本：失败返回 `null`，不会打断链。`isType` 使用 reified 类型
+参数，因此可以写 `List<String>`；`is List<String>` 因类型擦除无法写出来，而运行时也只
+能检查擦除后的 `List`。类型已经确定时再用 `asTypeNonNull`。
+
+### 小数
+
+```kotlin
+3.14159.roundTo(2)                       // 3.14
+3.1.roundToString(2)                     // "3.10"
+(-0.001).roundToString(2)                // "-0.00"
+2.341.roundTo(2, RoundingMode.CEILING)   // 2.35
+2.341.roundTo(2, RoundingMode.FLOOR)     // 2.34
+```
+
+`kotlin.math.round` 只能取整，`String.format` 在 common 代码里不可用。`roundTo` 返回数值；
+`roundToString` 保留末尾零和固定小数位，适合展示与序列化。显式 `RoundingMode` 避免依赖
+平台默认行为。
+
+### Lazy
+
+```kotlin
+val config = fastLazy { "loaded" }
+val session = safeLazy { "safe" }
+```
+
+`lazy` 默认是带同步的实现。`fastLazy` 把“不需要同步”的选择写在调用处，适合单线程或已有
+外部锁的初始化；并发首次访问时 initializer 可能执行多次。值可能跨线程共享时用
+`safeLazy`，让线程安全的选择在声明处就可见。
+
+### 字符串与 Map
+
+```kotlin
+"key=value".splitAtFirst('=') // ("key", "value")
+"key=value".splitAtFirst(';') // null
+
+mapOf("a" to 1).mergeWith(mapOf("a" to 2, "b" to 3)) { old, new -> old + new } // {a=3, b=3}
+```
+
+`split` 即使只期望一个分隔符也返回 List；`splitAtFirst` 返回 `Pair` 或 `null`，让“分隔符
+不存在”成为类型的一部分。`Map.plus` 会静默覆盖重复 key；`mergeWith` 把冲突策略显式写在
+调用处。
 
 ## API 一览
 
