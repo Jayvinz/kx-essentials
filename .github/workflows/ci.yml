@@ -44,5 +44,5 @@ jobs:
         run: ./gradlew :lib:compileKotlinIosArm64 :lib:compileKotlinIosSimulatorArm64 :lib:linkDebugFrameworkIosArm64
       - uses: actions/upload-artifact@v4
         with:
-          name: kx-iosArm64-framework
+          name: kx-essentials-iosArm64-framework
           path: lib/build/bin/iosArm64/debugFramework/Kx.framework

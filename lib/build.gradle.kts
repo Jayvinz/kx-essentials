@@ -15,7 +15,7 @@ val versionName = providers.environmentVariable("VERSION_NAME").orNull
 version = versionName
 
 val isMac = System.getProperty("os.name").startsWith("Mac")
-val artifactBase = "kx"
+val artifactBase = "kx-essentials"
 
 fun publicationArtifactId(name: String): String =
     if (name == "kotlinMultiplatform") artifactBase else "$artifactBase-${name.lowercase()}"
@@ -90,14 +90,14 @@ publishing {
     publications.withType<MavenPublication>().configureEach {
         artifactId = publicationArtifactId(name)
         pom {
-            name.set("Kx")
+            name.set("Kx Essentials")
             description.set(
-                "Small, native-feeling Kotlin Multiplatform extensions for common collection, text, number, result, and bit operations.",
+                "Native-feeling Kotlin Multiplatform extensions for strings, collections, maps, numbers, results, and bits. Zero dependencies.",
             )
             url.set(
                 providers.environmentVariable("GITHUB_REPOSITORY")
                     .map { "https://github.com/$it" }
-                    .orElse("https://github.com/Jayvinz/kx")
+                    .orElse("https://github.com/Jayvinz/kx-essentials")
                     .get(),
             )
             licenses {
@@ -113,7 +113,7 @@ publishing {
                 }
             }
             scm {
-                val repo = providers.environmentVariable("GITHUB_REPOSITORY").orElse("Jayvinz/kx").get()
+                val repo = providers.environmentVariable("GITHUB_REPOSITORY").orElse("Jayvinz/kx-essentials").get()
                 url.set("https://github.com/$repo")
                 connection.set("scm:git:git://github.com/$repo.git")
                 developerConnection.set("scm:git:ssh://git@github.com/$repo.git")
@@ -126,7 +126,7 @@ publishing {
             name = "GitHubPackages"
             url = uri(
                 "https://maven.pkg.github.com/" +
-                    providers.environmentVariable("GITHUB_REPOSITORY").orElse("Jayvinz/kx").get(),
+                    providers.environmentVariable("GITHUB_REPOSITORY").orElse("Jayvinz/kx-essentials").get(),
             )
             credentials {
                 username = providers.environmentVariable("GITHUB_ACTOR").orNull

@@ -1,8 +1,10 @@
-# Kx
+# Kx Essentials
+
+**像 Kotlin 原生 API 一样顺手的扩展库。**
 
 English: [README.md](README.md)
 
-一组「像 Kotlin 标准库一样」的扩展函数：命名、参数顺序、异常语义都尽量对齐 `kotlin.collections` / `kotlin.text` / `kotlin.math`，补上标准库有同类 API 却没有提供的常用操作。
+Kx Essentials 是一个零依赖的 Kotlin Multiplatform 扩展库，覆盖字符串、集合、Map、数字、Result 和位操作。命名与异常语义对齐标准库，不引入新的类型体系，也不是框架。
 
 - **多平台**：`lib` 是 Kotlin Multiplatform 模块，同一份 `commonMain` 代码编译到 **Android / JVM / Kotlin-JS / iOS**。
 - **零依赖**：只用标准库，不引入 AndroidX 或第三方库。
@@ -30,7 +32,7 @@ retries.orZero()                            // 0
 发布坐标：
 
 ```kotlin
-top.jayvin.dev:kx:0.1.0
+top.jayvin.dev:kx-essentials:0.1.0
 ```
 
 ### Kotlin Multiplatform
@@ -47,7 +49,7 @@ dependencyResolutionManagement {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("top.jayvin.dev:kx:0.1.0")
+            implementation("top.jayvin.dev:kx-essentials:0.1.0")
         }
     }
 }
@@ -59,7 +61,7 @@ Gradle 会根据消费方的 target 自动选择 AAR、JAR、JS klib 或 iOS kli
 
 ```kotlin
 dependencies {
-    implementation("top.jayvin.dev:kx:0.1.0")
+    implementation("top.jayvin.dev:kx-essentials:0.1.0")
 }
 ```
 
@@ -345,7 +347,7 @@ val session by safeLazy { createSession() }
 当前版本：`0.1.0`，Maven 坐标：
 
 ```kotlin
-implementation("top.jayvin.dev:kx:0.1.0")
+implementation("top.jayvin.dev:kx-essentials:0.1.0")
 ```
 
 ### 支持的目标
@@ -368,13 +370,13 @@ iOS target 只在 macOS 上配置，因此 Windows/Linux 本地构建不会尝�
 产物会写入 `~/.m2/repository/top/jayvin/dev/`，包含：
 
 ```text
-kx
-kx-jvm
-kx-js
-kx-android
-kx-iosarm64
-kx-iossimulatorarm64
-kx-iosx64
+kx-essentials
+kx-essentials-jvm
+kx-essentials-js
+kx-essentials-android
+kx-essentials-iosarm64
+kx-essentials-iossimulatorarm64
+kx-essentials-iosx64
 ```
 
 ### GitHub Packages
@@ -410,7 +412,7 @@ CI 工作流在 `.github/workflows/publish.yml`。
 
 POM 元数据已指向：
 
-- `https://github.com/Jayvinz/kx`
+- `https://github.com/Jayvinz/kx-essentials`
 - Apache-2.0（仓库根目录已包含 `LICENSE`）
 - developer `Jayvinz`
 

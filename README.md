@@ -1,10 +1,10 @@
-# Kx
+# Kx Essentials
 
-**Small, native-feeling Kotlin Multiplatform extensions for common collection, text, number, result, and bit operations.**
+**Kotlin extensions that feel native.**
 
 English · [中文](README.zh-CN.md) · `0.1.0` · Kotlin 2.2 · JDK 17
 
-Kx is a zero-dependency extension library for Kotlin Multiplatform. It follows the naming, argument order, and exception semantics of the Kotlin standard library, and adds operations that are missing or awkward to express with built-ins alone.
+Kx Essentials is a zero-dependency Kotlin Multiplatform library of focused extensions for strings, collections, maps, numbers, results, and bits. It follows the naming, argument order, and exception semantics of the Kotlin standard library, adds no new type system, and is not a framework.
 
 - **Multiplatform**: one `commonMain` source set for Android, JVM, Kotlin/JS, and iOS.
 - **Zero runtime dependencies**: only the Kotlin standard library.
@@ -27,7 +27,7 @@ Apple targets are built on macOS. Consumers of the published iOS klibs do not ne
 The library is published to Maven Central under:
 
 ```kotlin
-top.jayvin.dev:kx:0.1.0
+top.jayvin.dev:kx-essentials:0.1.0
 ```
 
 ### Kotlin Multiplatform
@@ -44,7 +44,7 @@ dependencyResolutionManagement {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("top.jayvin.dev:kx:0.1.0")
+            implementation("top.jayvin.dev:kx-essentials:0.1.0")
         }
     }
 }
@@ -56,7 +56,7 @@ Gradle resolves the correct AAR, JAR, JS klib, or iOS klib for each target.
 
 ```kotlin
 dependencies {
-    implementation("top.jayvin.dev:kx:0.1.0")
+    implementation("top.jayvin.dev:kx-essentials:0.1.0")
 }
 ```
 
@@ -104,7 +104,7 @@ mapOf("a" to 1, "b" to 2).inverse()         // {1=a, 2=b}
 | `Set.diff(other)` | Compute `(added, removed)` |
 | `MutableList.swap(a, b)` | Swap two elements in place |
 
-Kotlin already provides `union`, `intersect`, and `subtract`; Kx does not duplicate them.
+Kotlin already provides `union`, `intersect`, and `subtract`; Kx Essentials does not duplicate them.
 
 ### Maps and results
 
