@@ -152,7 +152,9 @@ subtypes.
 setOf(1, 2, 3) overlaps setOf(3, 4) // true: both contain 3
 setOf(1, 2) overlaps emptySet<Int>() // false
 
-setOf(1, 2).diff(setOf(2, 3))       // added=[3], removed=[1]
+val old = setOf(1, 2)
+val new = setOf(2, 3)
+old.diff(new) // added=[3], removed=[1]
 
 mapOf("a" to 1, "b" to 2).inverse() // {1=a, 2=b}
 mapOf("a" to 1, "b" to null).filterValuesNotNull() // {a=1}
