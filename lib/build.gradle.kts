@@ -45,8 +45,8 @@ kotlin {
         nodejs()
     }
 
-    // Apple targets require a macOS host. Keeping them conditional lets Windows
-    // and Linux contributors run the JVM/JS/Android build without Konan errors.
+    // Apple targets require a macOS host. They stay available for local builds,
+    // but CI and publishing intentionally run without the iOS targets.
     if (isMac) {
         iosArm64 {
             binaries.framework {

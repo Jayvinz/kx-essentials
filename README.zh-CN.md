@@ -6,7 +6,7 @@ English: [README.md](README.md)
 
 Kx Essentials 是一个零依赖的 Kotlin Multiplatform 扩展库，覆盖字符串、集合、Map、数字、Result 和位操作。命名与异常语义对齐标准库，不引入新的类型体系，也不是框架。
 
-- **多平台**：`lib` 是 Kotlin Multiplatform 模块，同一份 `commonMain` 代码编译到 **Android / JVM / Kotlin-JS / iOS**。
+- **多平台**：`lib` 是 Kotlin Multiplatform 模块，同一份 `commonMain` 代码编译到 **Android / JVM / Kotlin-JS**；iOS target 仅供本地 macOS 构建。
 - **零依赖**：只用标准库，不引入 AndroidX 或第三方库。
 - **显式 API**：开启 `explicitApi()`，所有公开声明都有明确类型和 KDoc。
 
@@ -38,7 +38,7 @@ kotlin {
 }
 ```
 
-Gradle 会根据消费方的 target 自动选择 AAR、JAR、JS klib 或 iOS klib。
+Gradle 会根据消费方的 target 自动选择 AAR、JAR 或 JS klib。
 
 ### 纯 Android / JVM
 
@@ -55,9 +55,8 @@ dependencies {
 | Android | AAR，要求 minSdk 21 |
 | JVM | JAR，JVM 17 |
 | Kotlin/JS | klib，支持 Node 和 browser 配置 |
-| iOS | iosArm64、iosSimulatorArm64、iosX64；KMP 消费方直接走 Maven |
 
-iOS target 只在 macOS 上构建；消费 iOS 产物的 KMP 项目不需要本机是 macOS，但如果要自行编译源码则需要 macOS 和 Xcode。
+iOS target 仅供本地 macOS 构建；它不参与 CI，也不会发布到 Maven Central 或 GitHub Packages。
 
 产物使用 Kotlin 2.0.21 编译，Kotlin 2.0 及以上的消费方均可使用；更新的 Kotlin 编译器可以读取旧版本产物。
 

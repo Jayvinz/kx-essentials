@@ -6,7 +6,7 @@ English · [中文](README.zh-CN.md) · `0.1.0` · Kotlin 2.0+ · JDK 17
 
 Kx Essentials is a zero-dependency Kotlin Multiplatform library of focused extensions for strings, collections, maps, numbers, results, and bits. It follows the naming, argument order, and exception semantics of the Kotlin standard library, adds no new type system, and is not a framework.
 
-- **Multiplatform**: one `commonMain` source set for Android, JVM, Kotlin/JS, and iOS.
+- **Multiplatform**: one `commonMain` source set for Android, JVM, and Kotlin/JS; iOS targets remain local-only.
 - **Zero runtime dependencies**: only the Kotlin standard library.
 - **Explicit API**: public declarations have explicit types and KDoc.
 - **Chain-friendly**: nullable fallbacks, results, and updates stay inside the expression.
@@ -18,9 +18,8 @@ Kx Essentials is a zero-dependency Kotlin Multiplatform library of focused exten
 | Android | AAR, `minSdk 21` |
 | JVM | JAR, JVM 17 |
 | Kotlin/JS | klib, Node and browser configurations |
-| iOS arm64 / simulator arm64 / x64 | klib; `Kx.framework` for Swift integration |
 
-Apple targets are built on macOS. Consumers of the published iOS klibs do not need a Mac, but building the source locally on iOS does require macOS and Xcode.
+iOS targets are configured for local macOS builds only. They are not built in CI and are not published to Maven Central or GitHub Packages.
 
 ## Installation
 
@@ -50,7 +49,7 @@ kotlin {
 }
 ```
 
-Gradle resolves the correct AAR, JAR, JS klib, or iOS klib for each target.
+Gradle resolves the correct AAR, JAR, or JS klib for each target.
 
 ### Android or JVM only
 
