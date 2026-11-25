@@ -19,14 +19,6 @@ val retries: Int? = null
 retries.orZero()                            // 0
 ```
 
-## 模块结构
-
-```
-.
-├── lib/    Kotlin Multiplatform 扩展函数库（Android、JVM、JS、iOS）
-└── demo/   Android 示例 App，运行时展示 lib 的真实输出
-```
-
 ## 依赖接入
 
 发布坐标：
@@ -86,6 +78,8 @@ println(listOf("a", "b").second()) // b
 | iOS | iosArm64、iosSimulatorArm64、iosX64；KMP 消费方直接走 Maven |
 
 iOS target 只在 macOS 上构建；消费 iOS 产物的 KMP 项目不需要本机是 macOS，但如果要自行编译源码则需要 macOS 和 Xcode。
+
+产物使用 Kotlin 2.0.21 编译，Kotlin 2.0 及以上的消费方均可使用；更新的 Kotlin 编译器可以读取旧版本产物。
 
 ## API 一览
 
@@ -342,97 +336,6 @@ val session by safeLazy { createSession() }
 
 `fastLazy` 首次访问仍只初始化一次，`isInitialized` 语义不变；并发首次访问可能重复执行 initializer，仅在明确无竞态时使用。
 
-## 发布
-
-当前版本：`0.1.0`，Maven 坐标：
-
-```kotlin
-implementation("top.jayvin.dev:kx-essentials:0.1.0")
-```
-
-### 支持的目标
-
-| 平台 | 产物 |
-| --- | --- |
-| Android | AAR |
-| JVM | JAR |
-| Kotlin/JS | klib（Node 和 browser 配置） |
-| iOS arm64 / simulator arm64 / x64 | klib，另提供 `Kx.framework` |
-
-iOS target 只在 macOS 上配置，因此 Windows/Linux 本地构建不会尝试编译 Apple 平台；完整发布请在 macOS runner 上执行。
-
-### 本地验证发布
-
-```bash
-./gradlew :lib:publishToMavenLocal
-```
-
-产物会写入 `~/.m2/repository/top/jayvin/dev/`，包含：
-
-```text
-kx-essentials
-kx-essentials-jvm
-kx-essentials-js
-kx-essentials-android
-kx-essentials-iosarm64
-kx-essentials-iossimulatorarm64
-kx-essentials-iosx64
-```
-
-### GitHub Packages
-
-```bash
-./gradlew :lib:publishAllPublicationsToGitHubPackagesRepository
-```
-
-需要：
-
-- `GITHUB_REPOSITORY`，例如 `owner/repo`
-- `GITHUB_ACTOR`
-- `GITHUB_TOKEN`，带 `packages: write`
-
-CI 工作流在 `.github/workflows/publish.yml`。
-
-### Maven Central
-
-发布 workflow 会先写入本地 `local-repo/`，再打包并上传到 Maven Central Portal：
-
-```bash
-./gradlew :lib:publishAllPublicationsToLocalRepository
-```
-
-发布 workflow 在 `vX.Y.Z` tag 上会通过 `VERSION_NAME` 自动使用 `X.Y.Z` 作为版本号；手动触发时默认是 `0.1.0`。
-
-需要配置 secrets：
-
-- `SONATYPE_USERNAME`
-- `SONATYPE_PASSWORD`
-- `SIGNING_KEY`
-- `SIGNING_PASSWORD`
-
-POM 元数据已指向：
-
-- `https://github.com/Jayvinz/kx-essentials`
-- Apache-2.0（仓库根目录已包含 `LICENSE`）
-- developer `Jayvinz`
-
-发布到 Maven Central 前应先把版本从 `0.1.0` 改成正式版本，并执行：
-
-```bash
-./gradlew :lib:publishToMavenLocal
-```
-
-确认所有 target 的 POM、sources 和 klib/AAR/JAR 都存在。
-
-### CI
-
-- `.github/workflows/ci.yml`
-  - Ubuntu：JVM + JS 测试、JVM jar
-  - Ubuntu：Android library + demo
-  - macOS：iOS klib / framework
-- `.github/workflows/publish.yml`
-  - macOS：发布 GitHub Packages，并把签名产物上传到 Maven Central Portal
-
 ## 示例 App
 
 `demo` 是一个不依赖 AndroidX 的原生 Android Activity，把每个扩展函数的真实返回值渲染到屏幕上。
@@ -460,8 +363,8 @@ POM 元数据已指向：
 
 ## 环境
 
-- Gradle 8.14.3（Wrapper 已包含）
-- Kotlin 2.2.21
+- Gradle 8.10.2（Wrapper 已包含）
+- Kotlin 2.0.21（产物兼容 Kotlin 2.0+）
 - AGP 8.7.3
 - Android `compileSdk 35` / `minSdk 21`，示例 App `minSdk 24`
 - JVM 17

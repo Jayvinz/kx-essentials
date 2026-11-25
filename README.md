@@ -2,7 +2,7 @@
 
 **Kotlin extensions that feel native.**
 
-English · [中文](README.zh-CN.md) · `0.1.0` · Kotlin 2.2 · JDK 17
+English · [中文](README.zh-CN.md) · `0.1.0` · Kotlin 2.0+ · JDK 17
 
 Kx Essentials is a zero-dependency Kotlin Multiplatform library of focused extensions for strings, collections, maps, numbers, results, and bits. It follows the naming, argument order, and exception semantics of the Kotlin standard library, adds no new type system, and is not a framework.
 
@@ -128,36 +128,11 @@ Kotlin already provides `union`, `intersect`, and `subtract`; Kx Essentials does
 
 ## Compatibility
 
-- Kotlin 2.2.21
+- Kotlin 2.0 and later 2.x releases
+- Published with Kotlin 2.0.21 so JVM metadata and KLIB ABI remain consumable by Kotlin 2.0+
 - JDK 17 for JVM and Android builds
 - Android `minSdk 21`
-- Gradle 8.14
-
-## Build from source
-
-```bash
-./gradlew :lib:jvmTest :lib:jsTest
-./gradlew build
-```
-
-On macOS, the iOS targets and framework binaries are also built:
-
-```bash
-./gradlew :lib:linkDebugFrameworkIosArm64
-```
-
-## Project layout
-
-```text
-.
-├── lib/     Kotlin Multiplatform library
-├── demo/    Android demo app
-└── docs/    Architecture decisions
-```
-
-## Publishing
-
-Maintainers publish through `.github/workflows/publish.yml`. The workflow runs on macOS so it can publish all targets, writes signed artifacts to `local-repo/`, uploads a bundle to Maven Central, and publishes to GitHub Packages.
+- Gradle 8.10.2
 
 ## License
 
