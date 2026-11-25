@@ -1,0 +1,16 @@
+.gradle/
+build/
+local.properties
+
+.idea/
+*.iml
+*.hprof
+
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
+.DS_Store
+local-repo/
+kotlin-js-store/
