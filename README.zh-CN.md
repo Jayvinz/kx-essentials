@@ -134,7 +134,7 @@ listOf(1, 2, 3).containsAll(1, 3) // true
 
 ```kotlin
 arrayOf("a", "b").at(-1)            // "b"
-intArrayOf(1, 2, 3).at(-1)          // 3
+intArrayOf(1, 2, 3).at(-2)          // 2
 doubleArrayOf(1.0, 2.0).atOrNull(5) // null
 ```
 
@@ -146,7 +146,7 @@ doubleArrayOf(1.0, 2.0).atOrNull(5) // null
 ### Set 与 Map
 
 ```kotlin
-setOf(1, 2, 3) overlaps setOf(3, 4) // true
+setOf(1, 2, 3) overlaps setOf(3, 4) // true：都包含 3
 setOf(1, 2) overlaps emptySet<Int>() // false
 
 setOf(1, 2).diff(setOf(2, 3))       // added=[3], removed=[1]
@@ -245,9 +245,9 @@ read withFlag write                 // 0b0011
 3L withoutFlag 1L                   // 2L
 3L toggleFlag 1L                    // 2L
 
-1.toBinaryString()                  // "1"
-(-1).toHexString()                  // "ffffffff"
-8.toOctalString()                   // "10"
+1.toBinaryString()                  // "1"（无 0b 前缀）
+(-1).toHexString()                  // "ffffffff"（无 0x 前缀）
+8.toOctalString()                   // "10"（无八进制前缀）
 1L.toBinaryString()                 // "1"
 (-1L).toHexString()                 // "ffffffffffffffff"
 8L.toOctalString()                  // "10"
@@ -256,7 +256,9 @@ read withFlag write                 // 0b0011
 `hasFlag` / `hasAnyFlag` / `withFlag` / `withoutFlag` / `toggleFlag` 同时提供 `Int` 和
 `Long` 版本。Kotlin 无法给这些类型自定义 `&`、`|`、`^` 运算符，所以用命名操作让权限位
 更易读。格式化函数按无符号补码输出，与 Java 的 `Integer` / `Long` 辅助方法一致；
-Kotlin 标准库没有 common 等价物。
+Kotlin 标准库没有 common 等价物。它们返回 Java 风格的无前缀数字串，分别对应
+`Integer.toBinaryString` / `toHexString` / `toOctalString`；需要 Kotlin 字面量时在调用点
+自行拼接前缀，Kotlin 本身没有八进制整数字面量。
 
 ### Result
 

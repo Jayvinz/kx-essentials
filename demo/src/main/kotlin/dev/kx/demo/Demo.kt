@@ -104,8 +104,8 @@ internal object Demo {
 
         section("Arrays")
         example(
-            "intArrayOf(1, 2, 3).at(-1)",
-            intArrayOf(1, 2, 3).at(-1),
+            "intArrayOf(1, 2, 3).at(-2)",
+            intArrayOf(1, 2, 3).at(-2),
         )
         example(
             "arrayOf(\"a\", \"b\").atOrNull(5)",

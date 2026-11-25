@@ -137,7 +137,7 @@ in-place primitive for `MutableList`.
 
 ```kotlin
 arrayOf("a", "b").at(-1)            // "b"
-intArrayOf(1, 2, 3).at(-1)          // 3
+intArrayOf(1, 2, 3).at(-2)          // 2
 doubleArrayOf(1.0, 2.0).atOrNull(5) // null
 ```
 
@@ -150,7 +150,7 @@ subtypes.
 ### Sets and maps
 
 ```kotlin
-setOf(1, 2, 3) overlaps setOf(3, 4) // true
+setOf(1, 2, 3) overlaps setOf(3, 4) // true: both contain 3
 setOf(1, 2) overlaps emptySet<Int>() // false
 
 setOf(1, 2).diff(setOf(2, 3))       // added=[3], removed=[1]
@@ -257,9 +257,9 @@ read withFlag write                 // 0b0011
 3L withoutFlag 1L                   // 2L
 3L toggleFlag 1L                    // 2L
 
-1.toBinaryString()                  // "1"
-(-1).toHexString()                  // "ffffffff"
-8.toOctalString()                   // "10"
+1.toBinaryString()                  // "1" (no 0b prefix)
+(-1).toHexString()                  // "ffffffff" (no 0x prefix)
+8.toOctalString()                   // "10" (no octal prefix)
 1L.toBinaryString()                 // "1"
 (-1L).toHexString()                 // "ffffffffffffffff"
 8L.toOctalString()                  // "10"
@@ -269,7 +269,11 @@ The `hasFlag` / `hasAnyFlag` / `withFlag` / `withoutFlag` / `toggleFlag` set
 exists for both `Int` and `Long`. Kotlin cannot define custom `&`, `|`, or `^`
 operators for these, so named operations make permission masks readable. The
 formatting functions use unsigned two's-complement output, matching Java's
-`Integer` / `Long` helpers; there is no common equivalent in Kotlin.
+`Integer` / `Long` helpers; there is no common equivalent in Kotlin. They return
+Java-style digits without a `0b`, `0x`, or octal prefix, because they mirror
+`Integer.toBinaryString` / `toHexString` / `toOctalString`. If you need a
+Kotlin-style literal, prepend the prefix at the call site; Kotlin has no octal
+integer literal syntax.
 
 ### Results
 
