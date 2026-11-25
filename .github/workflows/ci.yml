@@ -15,7 +15,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
       - name: JVM and JS tests
         run: ./gradlew :lib:jvmTest :lib:jsTest :lib:jvmJar
@@ -28,7 +27,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
       - name: Android library and demo
         run: ./gradlew :lib:assembleDebug :demo:assembleDebug
@@ -41,7 +39,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
       - name: Compile iOS targets
         run: ./gradlew :lib:compileKotlinIosArm64 :lib:compileKotlinIosSimulatorArm64 :lib:linkDebugFrameworkIosArm64
