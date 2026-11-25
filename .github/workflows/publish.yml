@@ -7,7 +7,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -36,14 +36,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish signed artifacts to local repository
-        if: env.HAS_CENTRAL == 'true'
+      - name: Publish local artifacts
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
         run: |
-          rm -rf local-repo build/central-bundle build/central-bundle.zip
+          rm -rf local-repo build/central-bundle build/central-bundle.zip build/release-assets
           ./gradlew :lib:publishAllPublicationsToLocalRepository
+
+      - name: Prepare GitHub Release assets
+        run: |
+          mkdir -p build/release-assets
+          cp "local-repo/top/jayvin/dev/kx-essentials-jvm/${VERSION_NAME}/kx-essentials-jvm-${VERSION_NAME}.jar"             "build/release-assets/kx-essentials-${VERSION_NAME}-jvm.jar"
+          cp "local-repo/top/jayvin/dev/kx-essentials-android/${VERSION_NAME}/kx-essentials-android-${VERSION_NAME}.aar"             "build/release-assets/kx-essentials-${VERSION_NAME}-android.aar"
+          cp "local-repo/top/jayvin/dev/kx-essentials-js/${VERSION_NAME}/kx-essentials-js-${VERSION_NAME}.klib"             "build/release-assets/kx-essentials-${VERSION_NAME}-js.klib"
+          cp "local-repo/top/jayvin/dev/kx-essentials/${VERSION_NAME}/kx-essentials-${VERSION_NAME}-sources.jar"             "build/release-assets/kx-essentials-${VERSION_NAME}-sources.jar"
+          (cd local-repo && zip -qr "../build/release-assets/kx-essentials-${VERSION_NAME}.zip" top/jayvin/dev)
+
+      - name: Upload GitHub Release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME"               --title "Kx Essentials ${VERSION_NAME}"               --notes "Kotlin 2.0+ release. Artifacts: JVM JAR, Android AAR, JS klib, sources, and the Maven repository bundle."
+          fi
+          gh release upload "$GITHUB_REF_NAME" build/release-assets/* --clobber
 
       - name: Bundle Maven Central artifacts
         if: env.HAS_CENTRAL == 'true'
