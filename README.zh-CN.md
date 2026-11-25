@@ -63,86 +63,257 @@ iOS target 只在 macOS 上构建；消费 iOS 产物的 KMP 项目不需要本�
 
 ## 快速开始
 
-以下示例取自 demo（`demo/src/main/kotlin/dev/kx/demo/Demo.kt`）。
+以下示例以 demo（`demo/src/main/kotlin/dev/kx/demo/Demo.kt`）中的调用为基础，覆盖全部扩展族。
 
 ### 可空值
 
 ```kotlin
 import dev.kx.*
 
-val missingCount: Int? = null
-missingCount.orZero()                       // 0
-missingCount.orDefault(10)                  // 10
+val retries: Int? = null
+val ratio: Double? = null
+retries.orZero() // 0
+ratio.orZero()   // 0.0
 
-val missingName: String? = null
-missingName.orDefault("anonymous")          // "anonymous"
-missingName.fallback { "anonymous" }        // "anonymous"
+val enabled: Boolean? = null
+enabled.orFalse() // false
+enabled.orTrue()  // true
 
-val presentName: String? = "Ada"
-presentName.orThrow { IllegalStateException() }.uppercase() // "ADA"
+val pixels: IntArray? = null
+pixels.orEmpty().size // 0
 ```
 
-`orZero` / `orDefault` 的价值不是替代单个 `?:`，而是让后续调用继续留在链上；否则一旦
-fallback 后面还要接方法，就得多加括号。`orDefault` 的参数会立即求值；默认值昂贵或只应
-在 null 时计算时用 `fallback { ... }`。`orThrow` 则表达相反的契约：快速失败，不需要写
-`?: throw ...`。
+`orZero` 覆盖全部数字可空类型（`Byte?`、`Short?`、`Int?`、`Long?`、`Float?`、
+`Double?`、`UByte?`、`UShort?`、`UInt?`、`ULong?`）。`orEmpty` 覆盖 8 种基本类型
+数组，因为标准库的 `Array.orEmpty` 不适用于 `IntArray`、`BooleanArray` 这些不是
+`Array` 子类型的数组。`orFalse` / `orTrue` 是布尔版本。它们看似只是省掉 `?:`，
+真正的价值是让表达式继续留在链上，并保持接收者的类型。
 
-### 负索引与类型转换
+### 默认值与失败
 
 ```kotlin
-val names = listOf("a", "b", "c")
-names.at(-1)          // "c"
-names.atOrNull(5)     // null
+val name: String? = null
+name.orDefault("anonymous")    // "anonymous"
+name.fallback { "anonymous" }  // "anonymous"
 
+val present: String? = "Ada"
+present.orThrow { IllegalStateException("missing") }.uppercase() // "ADA"
+```
+
+`orDefault` 是立即求值的 fallback：接收者非空时参数也已经计算。`fallback`
+接收 lambda，只在 null 分支执行。`orThrow` 是快速失败版本：返回非空值或抛异常，
+不用把 `?: throw ...` 塞进链里。缺失属于程序错误时用它；缺失属于正常数据时用
+`toResultOr`。
+
+### List 与索引
+
+```kotlin
+val numbers = listOf(10, 20, 30, 40)
+numbers.second()           // 20
+numbers.secondOrNull()     // 20
+numbers.secondLast()       // 30
+numbers.secondLastOrNull() // 30
+listOf(1).secondOrNull()   // null
+
+numbers.at(-1)      // 40
+numbers.atOrNull(99) // null
+
+val mutable = mutableListOf("a", "b", "c")
+mutable.swap(0, 2)  // [c, b, a]
+
+listOf(1, 2, 3).containsAny(4, 2) // true
+listOf(1, 2, 3).containsAll(1, 3) // true
+```
+
+`second` / `secondLast` 补全 `first` / `last` 家族；带 `OrNull` 的版本在列表过短时
+不抛异常。`at` 把负索引收敛成一条明确契约：`-1` 是最后一个、`-size` 是第一个，
+越界不回绕。`containsAny` / `containsAll` 直接接收元素，不用先构造临时集合。
+`swap` 是 `MutableList` 缺失的原地交换操作。
+
+### 数组
+
+```kotlin
+arrayOf("a", "b").at(-1)            // "b"
+intArrayOf(1, 2, 3).at(-1)          // 3
+doubleArrayOf(1.0, 2.0).atOrNull(5) // null
+```
+
+`at` / `atOrNull` 对 `Array<out T>` 和 8 种基本类型数组都有重载：`BooleanArray`、
+`ByteArray`、`CharArray`、`ShortArray`、`IntArray`、`LongArray`、`FloatArray`、
+`DoubleArray`。契约与 List 完全一致；基本类型数组不是 `Array` 子类型，所以必须单独
+提供重载。
+
+### Set 与 Map
+
+```kotlin
+setOf(1, 2, 3) overlaps setOf(3, 4) // true
+setOf(1, 2) overlaps emptySet<Int>() // false
+
+setOf(1, 2).diff(setOf(2, 3))       // added=[3], removed=[1]
+
+mapOf("a" to 1, "b" to 2).inverse() // {1=a, 2=b}
+mapOf("a" to 1, "b" to null).filterValuesNotNull() // {a=1}
+
+val config: Map<String, Int?> = mapOf("port" to 8080, "timeout" to null)
+config.requireValue("port") // 8080
+
+mapOf("a" to 1)
+    .mergeWith(mapOf("a" to 2, "b" to 3)) { old, new -> old + new } // {a=3, b=3}
+```
+
+`overlaps` 只回答“有没有交集”，不构造交集 Set。`diff` 一次返回新增和移除两个方向，
+标准库的 `union` / `subtract` 只能分别表达一边。`inverse` 没有标准等价物；value 重复时
+最后一个 entry 获胜。`filterValuesNotNull` 去 null 并智能转换剩余 value，避免 `!!`。
+`requireValue` 区分“key 不存在”和“key 存在但 value 为 null”，这是 `Map.getValue` 对
+`Map<K, V?>` 做不到的。`mergeWith` 把重复 key 的策略显式写在调用处，`Map.plus` 会静默
+覆盖。
+
+### 字符串
+
+```kotlin
+"hello   kotlin WORLD".toTitleCase() // "Hello   Kotlin World"
+"Kotlin extensions are fun".truncate(18) // "Kotlin extensions…"
+"   ".nullIfBlank() // null
+
+"key=value".splitAtFirst('=')  // ("key", "value")
+"a::b::c".splitAtFirst("::")   // ("a", "b::c")
+"a.b.c".splitAtLast('.')       // ("a.b", "c")
+"a::b::c".splitAtLast("::")    // ("a::b", "c")
+```
+
+`toTitleCase` 是已废弃 `capitalize` 的常用替代，但保留内部空白。`truncate` 在 common
+代码里可用，且结果不会超过 `maxLength`。`nullIfBlank` 是 `ifBlank` 的可空版本。
+`splitAtFirst` / `splitAtLast` 返回 `Pair?`，让“分隔符不存在”成为类型的一部分，而不是
+空 List 或手写 index 判断。
+
+### 类型转换与判断
+
+```kotlin
 val payload: Any = listOf("a", "b")
+
 payload.asType<List<String>>()?.second() // "b"
 (1 as Any).asType<String>()              // null
+payload.asTypeNonNull<List<String>>().second() // "b"
 payload.isType<List<String>>()           // true
 ```
 
-`at` 把负索引收敛成一条明确契约：`-1` 是最后一个、`-size` 是第一个，越界不回绕。
-`asType` 是 `as` 的安全版本：失败返回 `null`，不会打断链。`isType` 使用 reified 类型
-参数，因此可以写 `List<String>`；`is List<String>` 因类型擦除无法写出来，而运行时也只
-能检查擦除后的 `List`。类型已经确定时再用 `asTypeNonNull`。
+`asType` 是 `as` 的链式安全版本：失败返回 `null`，不打断链。`asTypeNonNull` 在类型
+已经确定时保留非空结果。`isType` 使用 reified 类型参数，因此可以写 `List<String>`；
+`is List<String>` 因类型擦除无法写出来，运行时也只能检查擦除后的 `List`。它的 contract
+还会在 true 分支智能转换接收者。
 
-### 小数
+### 数字、角度与舍入
 
 ```kotlin
-3.14159.roundTo(2)                       // 3.14
-3.1.roundToString(2)                     // "3.10"
-(-0.001).roundToString(2)                // "-0.00"
-2.341.roundTo(2, RoundingMode.CEILING)   // 2.35
-2.341.roundTo(2, RoundingMode.FLOOR)     // 2.34
+PI.toDegrees()           // 180.0
+(PI / 2).toDegrees()     // 90.0
+180.0.toRadians()        // PI
+PI.toFloat().toDegrees() // 180.0f
+90f.toRadians()          // 1.5707964f
+
+3.14159.roundTo(2)      // 3.14
+3.14159f.roundTo(2)     // 3.14f
+2.341.roundTo(2, RoundingMode.CEILING) // 2.35
+2.341.roundTo(2, RoundingMode.FLOOR)   // 2.34
+2.341f.roundTo(2, RoundingMode.FLOOR)  // 2.34f
+
+3.1.roundToString(2)    // "3.10"
+3.1f.roundToString(2)   // "3.10"
+2.341.roundToString(2, RoundingMode.CEILING) // "2.35"
+2.341f.roundToString(2, RoundingMode.FLOOR)  // "2.34"
 ```
 
-`kotlin.math.round` 只能取整，`String.format` 在 common 代码里不可用。`roundTo` 返回数值；
-`roundToString` 保留末尾零和固定小数位，适合展示与序列化。显式 `RoundingMode` 避免依赖
-平台默认行为。
+`toDegrees` / `toRadians` 同时覆盖 `Double` 和 `Float`，避免在每个调用点重复换算。
+`kotlin.math.round` 只能取整，`String.format` 在 common 代码里不可用。`roundTo` 返回
+数值并丢掉末尾零；`roundToString` 保留固定小数位和末尾零，适合展示和序列化。
+`RoundingMode` 包含 `HALF_UP`（默认）、`CEILING`、`FLOOR`。
+
+### 位标志与格式化
+
+```kotlin
+val read = 0b0001
+val write = 0b0010
+read hasFlag 0b0001                 // true
+read hasAnyFlag 0b0011              // true
+read withFlag write                 // 0b0011
+(read withFlag write) withoutFlag read // 0b0010
+(read withFlag write) toggleFlag write // 0b0001
+
+1L hasFlag 1L                       // true
+1L hasAnyFlag 2L                    // false
+1L withFlag 2L                      // 3L
+3L withoutFlag 1L                   // 2L
+3L toggleFlag 1L                    // 2L
+
+1.toBinaryString()                  // "1"
+(-1).toHexString()                  // "ffffffff"
+8.toOctalString()                   // "10"
+1L.toBinaryString()                 // "1"
+(-1L).toHexString()                 // "ffffffffffffffff"
+8L.toOctalString()                  // "10"
+```
+
+`hasFlag` / `hasAnyFlag` / `withFlag` / `withoutFlag` / `toggleFlag` 同时提供 `Int` 和
+`Long` 版本。Kotlin 无法给这些类型自定义 `&`、`|`、`^` 运算符，所以用命名操作让权限位
+更易读。格式化函数按无符号补码输出，与 Java 的 `Integer` / `Long` 辅助方法一致；
+Kotlin 标准库没有 common 等价物。
+
+### Result
+
+```kotlin
+val parsed: String? = "42"
+parsed.toResultOr { IllegalArgumentException("missing") }
+    .map(String::toInt) // Success(42)
+
+val missing: String? = null
+missing.toResultOr { IllegalArgumentException("missing") } // Failure(...)
+
+listOf(Result.success(1), Result.success(2)).combine() // Success([1, 2])
+
+val mixed = listOf(
+    Result.success(1),
+    Result.failure<Int>(IllegalStateException("bad")),
+)
+mixed.combine()          // Failure(...)
+mixed.partitionResults() // values=[1], errors=[IllegalStateException("bad")]
+```
+
+`toResultOr` 是 `orThrow` 的 value-track 版本：保留标准 `Result`，不引入自定义
+`Either` 类型。`combine` 遇到第一个失败就短路；`partitionResults` 消费全部元素并保留
+所有错误，适合批量校验。
 
 ### Lazy
 
 ```kotlin
-val config = fastLazy { "loaded" }
-val session = safeLazy { "safe" }
+val config: String by fastLazy { "loaded" }
+val session: String by safeLazy { "safe" }
 ```
 
-`lazy` 默认是带同步的实现。`fastLazy` 把“不需要同步”的选择写在调用处，适合单线程或已有
-外部锁的初始化；并发首次访问时 initializer 可能执行多次。值可能跨线程共享时用
-`safeLazy`，让线程安全的选择在声明处就可见。
+这里要用 `by`，不是 `=`：两个函数返回的是 `Lazy<T>` 委托。`lazy` 默认是带同步的实现。
+`fastLazy` 把“不需要同步”的选择暴露出来，适合单线程初始化；并发首次访问时 initializer
+可能执行多次。`safeLazy` 保留同步保证。名字让这个取舍在声明处就可见。
 
-### 字符串与 Map
+### Pair
 
 ```kotlin
-"key=value".splitAtFirst('=') // ("key", "value")
-"key=value".splitAtFirst(';') // null
-
-mapOf("a" to 1).mergeWith(mapOf("a" to 2, "b" to 3)) { old, new -> old + new } // {a=3, b=3}
+("key" to 1).swap() // (1, "key")
 ```
 
-`split` 即使只期望一个分隔符也返回 List；`splitAtFirst` 返回 `Pair` 或 `null`，让“分隔符
-不存在”成为类型的一部分。`Map.plus` 会静默覆盖重复 key；`mergeWith` 把冲突策略显式写在
-调用处。
+`Pair` 没有标准 `swap`；这个扩展把操作留在值上，不用解构后再构造。
 
+### 重载覆盖
+
+上面的示例覆盖以下扩展族；接收者列表是完整的：
+
+| API 家族 | 接收者 / 变体 |
+| --- | --- |
+| `orZero` | `Byte?`、`Short?`、`Int?`、`Long?`、`Float?`、`Double?`、`UByte?`、`UShort?`、`UInt?`、`ULong?` |
+| `orEmpty` | `BooleanArray?`、`ByteArray?`、`CharArray?`、`ShortArray?`、`IntArray?`、`LongArray?`、`FloatArray?`、`DoubleArray?` |
+| `at` / `atOrNull` | `List<T>`、`Array<out T>`、`BooleanArray`、`ByteArray`、`CharArray`、`ShortArray`、`IntArray`、`LongArray`、`FloatArray`、`DoubleArray` |
+| `hasFlag`、`hasAnyFlag`、`withFlag`、`withoutFlag`、`toggleFlag` | `Int`、`Long` |
+| `toDegrees`、`toRadians` | `Double`、`Float` |
+| `roundTo`、`roundToString` | `Double`、`Float` |
+| `splitAtFirst`、`splitAtLast` | `Char`、`String` |
 ## API 一览
 
 ### 命名约定
