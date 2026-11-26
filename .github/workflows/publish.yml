@@ -48,10 +48,31 @@ jobs:
           done
           exit "$missing"
 
+      # GitHub Packages versions are immutable: uploading any file of an existing version fails
+      # with HTTP 409. Re-running a release must not block the Central publication, so a 409 is
+      # treated as "already published" per publication task.
       - name: Publish to GitHub Packages
-        run: ./gradlew :lib:publishAllPublicationsToGitHubPackagesRepository
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          failed=0
+          for task in \
+            publishKotlinMultiplatformPublicationToGitHubPackagesRepository \
+            publishJsPublicationToGitHubPackagesRepository \
+            publishAndroidReleasePublicationToGitHubPackagesRepository \
+            publishJvmPublicationToGitHubPackagesRepository; do
+            log="$RUNNER_TEMP/ghpkg-$task.log"
+            if ./gradlew ":lib:$task" >"$log" 2>&1; then
+              echo "Published :lib:$task"
+            elif grep -q 'status code 409' "$log"; then
+              echo "::notice::GitHub Packages already has kx-essentials ${VERSION_NAME} for $task; left unchanged."
+            else
+              cat "$log"
+              echo "::error::$task failed"
+              failed=1
+            fi
+          done
+          exit "$failed"
 
       - name: Publish signed artifacts to local repository
         env:
