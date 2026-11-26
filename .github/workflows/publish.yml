@@ -102,10 +102,25 @@ jobs:
           fi
           gh release upload "$GITHUB_REF_NAME" build/release-assets/* --clobber
 
+      # Versions already on Maven Central are immutable. Re-running a release (for example to
+      # refresh the GitHub Release assets) must skip the Central upload instead of submitting a
+      # duplicate deployment.
+      - name: Check whether Maven Central already has this version
+        id: central_version
+        run: |
+          url="https://repo1.maven.org/maven2/top/jayvin/dev/kx-essentials/${VERSION_NAME}/kx-essentials-${VERSION_NAME}.pom"
+          if curl --silent --fail --head "$url" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Maven Central already has kx-essentials ${VERSION_NAME}; skipping the Central upload."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # The Kotlin Multiplatform root module references kx-essentials-jvm/-android/-js through
       # its Gradle module metadata, so every one of those modules has to be in the bundle; a
       # root-only bundle fails to resolve on the consumer side.
       - name: Bundle Maven Central artifacts
+        if: steps.central_version.outputs.exists != 'true'
         run: |
           mkdir -p build/central-bundle/top/jayvin/dev
           cp -R local-repo/top/jayvin/dev/kx-essentials* build/central-bundle/top/jayvin/dev/
@@ -115,6 +130,7 @@ jobs:
           (cd build/central-bundle && zip -qr ../central-bundle.zip top)
 
       - name: Upload bundle to Maven Central
+        if: steps.central_version.outputs.exists != 'true'
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -130,23 +146,23 @@ jobs:
           echo "Deployment id: $deployment_id"
           echo "DEPLOYMENT_ID=$deployment_id" >> "$GITHUB_ENV"
 
-      # Central validates and publishes asynchronously. Poll until the deployment is PUBLISHED
-      # so a rejection (bad POM, missing signature, unverified namespace) fails the release
-      # instead of being reported as a success.
+      # Central uploads the validated bundle to Maven Central asynchronously; for a
+      # multi-module Kotlin Multiplatform release this has taken well over ten minutes.
       - name: Wait for Maven Central publication
+        if: steps.central_version.outputs.exists != 'true'
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
           set -euo pipefail
           token="$(printf '%s:%s' "$SONATYPE_USERNAME" "$SONATYPE_PASSWORD" | base64 -w0)"
-          for attempt in $(seq 1 60); do
+          for attempt in $(seq 1 180); do
             state="$(curl --fail --silent --show-error --retry 3 --retry-delay 5 \
               --request POST \
               --header "Authorization: Bearer $token" \
               "https://central.sonatype.com/api/v1/publisher/status?id=${DEPLOYMENT_ID}" \
               | jq -r '.deploymentState')"
-            echo "Central deployment state: ${state} (attempt ${attempt}/60)"
+            echo "Central deployment state: ${state} (attempt ${attempt}/180)"
             case "$state" in
               PUBLISHED)
                 echo "Published to Maven Central: top.jayvin.dev:kx-essentials:${VERSION_NAME}"
@@ -157,7 +173,7 @@ jobs:
                 exit 1
                 ;;
             esac
-            sleep 10
+            sleep 15
           done
           echo "::error::Timed out waiting for deployment ${DEPLOYMENT_ID}; check https://central.sonatype.com/publishing/deployments"
           exit 1
