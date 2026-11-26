@@ -6,6 +6,8 @@ on:
     tags:
       - 'v*'
 
+# GitHub Packages only needs packages: write; the release (create/upload assets) needs
+# contents: write.
 permissions:
   contents: write
   packages: write
@@ -13,11 +15,9 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    env:
-      HAS_CENTRAL: ${{ secrets.SONATYPE_USERNAME != '' && secrets.SONATYPE_PASSWORD != '' && secrets.SIGNING_KEY != '' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -31,12 +31,29 @@ jobs:
           fi
           echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
+      # Maven Central rejects unsigned releases, so a release without the signing key must
+      # fail here instead of publishing to GitHub Packages and silently skipping Central.
+      - name: Verify release secrets
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        run: |
+          missing=0
+          for name in SONATYPE_USERNAME SONATYPE_PASSWORD SIGNING_KEY; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::$name is not configured"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
       - name: Publish to GitHub Packages
         run: ./gradlew :lib:publishAllPublicationsToGitHubPackagesRepository
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish local artifacts
+      - name: Publish signed artifacts to local repository
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
@@ -47,10 +64,10 @@ jobs:
       - name: Prepare GitHub Release assets
         run: |
           mkdir -p build/release-assets
-          cp "local-repo/top/jayvin/dev/kx-essentials-jvm/${VERSION_NAME}/kx-essentials-jvm-${VERSION_NAME}.jar"             "build/release-assets/kx-essentials-${VERSION_NAME}-jvm.jar"
-          cp "local-repo/top/jayvin/dev/kx-essentials-android/${VERSION_NAME}/kx-essentials-android-${VERSION_NAME}.aar"             "build/release-assets/kx-essentials-${VERSION_NAME}-android.aar"
-          cp "local-repo/top/jayvin/dev/kx-essentials-js/${VERSION_NAME}/kx-essentials-js-${VERSION_NAME}.klib"             "build/release-assets/kx-essentials-${VERSION_NAME}-js.klib"
-          cp "local-repo/top/jayvin/dev/kx-essentials/${VERSION_NAME}/kx-essentials-${VERSION_NAME}-sources.jar"             "build/release-assets/kx-essentials-${VERSION_NAME}-sources.jar"
+          cp "local-repo/top/jayvin/dev/kx-essentials-jvm/${VERSION_NAME}/kx-essentials-jvm-${VERSION_NAME}.jar" "build/release-assets/kx-essentials-${VERSION_NAME}-jvm.jar"
+          cp "local-repo/top/jayvin/dev/kx-essentials-android/${VERSION_NAME}/kx-essentials-android-${VERSION_NAME}.aar" "build/release-assets/kx-essentials-${VERSION_NAME}-android.aar"
+          cp "local-repo/top/jayvin/dev/kx-essentials-js/${VERSION_NAME}/kx-essentials-js-${VERSION_NAME}.klib" "build/release-assets/kx-essentials-${VERSION_NAME}-js.klib"
+          cp "local-repo/top/jayvin/dev/kx-essentials/${VERSION_NAME}/kx-essentials-${VERSION_NAME}-sources.jar" "build/release-assets/kx-essentials-${VERSION_NAME}-sources.jar"
           (cd local-repo && zip -qr "../build/release-assets/kx-essentials-${VERSION_NAME}.zip" top/jayvin/dev)
 
       - name: Upload GitHub Release assets
@@ -58,33 +75,68 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release create "$GITHUB_REF_NAME"               --title "Kx Essentials ${VERSION_NAME}"               --notes "Kotlin 2.0+ release. Artifacts: JVM JAR, Android AAR, JS klib, sources, and the Maven repository bundle."
+            gh release create "$GITHUB_REF_NAME" \
+              --title "Kx Essentials ${VERSION_NAME}" \
+              --notes "Kotlin 2.0+ release. Published to Maven Central as top.jayvin.dev:kx-essentials:${VERSION_NAME}. Attached artifacts: JVM JAR, Android AAR, JS klib, sources, and the signed Maven repository bundle."
           fi
           gh release upload "$GITHUB_REF_NAME" build/release-assets/* --clobber
 
+      # The Kotlin Multiplatform root module references kx-essentials-jvm/-android/-js through
+      # its Gradle module metadata, so every one of those modules has to be in the bundle; a
+      # root-only bundle fails to resolve on the consumer side.
       - name: Bundle Maven Central artifacts
-        if: env.HAS_CENTRAL == 'true'
         run: |
           mkdir -p build/central-bundle/top/jayvin/dev
-          cp -R local-repo/top/jayvin/dev/kx-essentials build/central-bundle/top/jayvin/dev/
+          cp -R local-repo/top/jayvin/dev/kx-essentials* build/central-bundle/top/jayvin/dev/
+          # Stale repository metadata is not part of a deployment; keep the per-file
+          # checksums and signatures that the local publication generated.
           find build/central-bundle -type f -name 'maven-metadata*' -delete
           (cd build/central-bundle && zip -qr ../central-bundle.zip top)
 
-      - name: Skip Maven Central
-        if: env.HAS_CENTRAL != 'true'
-        run: echo "SONATYPE_USERNAME / SONATYPE_PASSWORD / SIGNING_KEY are not all configured; GitHub Packages was published, Maven Central was skipped."
-
       - name: Upload bundle to Maven Central
-        if: env.HAS_CENTRAL == 'true'
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
-          token="$(printf '%s:%s' "$SONATYPE_USERNAME" "$SONATYPE_PASSWORD" | base64 | tr -d '\n')"
+          set -euo pipefail
+          token="$(printf '%s:%s' "$SONATYPE_USERNAME" "$SONATYPE_PASSWORD" | base64 -w0)"
           version="${GITHUB_REF_NAME#v}"
-          deployment_id="$(curl --fail --silent --show-error --request POST \
+          deployment_id="$(curl --fail --silent --show-error \
+            --request POST \
             --header "Authorization: Bearer $token" \
             --form bundle=@build/central-bundle.zip \
             "https://central.sonatype.com/api/v1/publisher/upload?name=kx-essentials-${version}&publishingType=AUTOMATIC")"
           echo "Deployment id: $deployment_id"
-          echo "Central release submitted; publication continues asynchronously."
+          echo "DEPLOYMENT_ID=$deployment_id" >> "$GITHUB_ENV"
+
+      # Central validates and publishes asynchronously. Poll until the deployment is PUBLISHED
+      # so a rejection (bad POM, missing signature, unverified namespace) fails the release
+      # instead of being reported as a success.
+      - name: Wait for Maven Central publication
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          token="$(printf '%s:%s' "$SONATYPE_USERNAME" "$SONATYPE_PASSWORD" | base64 -w0)"
+          for attempt in $(seq 1 60); do
+            state="$(curl --fail --silent --show-error --retry 3 --retry-delay 5 \
+              --request POST \
+              --header "Authorization: Bearer $token" \
+              "https://central.sonatype.com/api/v1/publisher/status?id=${DEPLOYMENT_ID}" \
+              | jq -r '.deploymentState')"
+            echo "Central deployment state: ${state} (attempt ${attempt}/60)"
+            case "$state" in
+              PUBLISHED)
+                echo "Published to Maven Central: top.jayvin.dev:kx-essentials:${VERSION_NAME}"
+                exit 0
+                ;;
+              FAILED)
+                echo "::error::Maven Central rejected deployment ${DEPLOYMENT_ID}"
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          echo "::error::Timed out waiting for deployment ${DEPLOYMENT_ID}; check https://central.sonatype.com/publishing/deployments"
+          exit 1

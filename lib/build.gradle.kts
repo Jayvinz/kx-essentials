@@ -17,8 +17,12 @@ version = versionName
 val isMac = System.getProperty("os.name").startsWith("Mac")
 val artifactBase = "kx-essentials"
 
-fun publicationArtifactId(name: String): String =
-    if (name == "kotlinMultiplatform") artifactBase else "$artifactBase-${name.lowercase()}"
+fun publicationArtifactId(name: String): String = when (name) {
+    "kotlinMultiplatform" -> artifactBase
+    // The Android publication is named androidRelease; the published artifact drops "release".
+    "androidRelease" -> "$artifactBase-android"
+    else -> "$artifactBase-${name.lowercase()}"
+}
 
 kotlin {
     explicitApi()
@@ -88,7 +92,6 @@ android {
 
 publishing {
     publications.withType<MavenPublication>().configureEach {
-        artifactId = publicationArtifactId(name)
         pom {
             name.set("Kx Essentials")
             description.set(
@@ -150,16 +153,25 @@ signing {
         )
     }
 }
-if (!signingKey.isNullOrBlank()) {
-    publishing.publications.withType<MavenPublication>().configureEach {
-        signing.sign(this)
-    }
-}
-
+// Publication tweaks have to run after the Kotlin/Android plugins finish configuring their
+// publications: the Android plugin sets its own artifactId ("<project>-android") late, and
+// adding artifacts after signing has been wired would leave them unsigned.
 afterEvaluate {
     publishing.publications.withType<MavenPublication>().configureEach {
-        if (name == "androidRelease") {
-            artifactId = "$artifactBase-android"
+        artifactId = publicationArtifactId(name)
+        // Maven Central requires a javadoc artifact next to every published artifact. Kotlin
+        // Multiplatform has no Javadoc toolchain for its metadata, JS, and Android publications,
+        // so publish a placeholder jar (explicitly allowed by Central) containing the README.
+        // One task per publication keeps the signed jar paths distinct; a shared task would make
+        // every sign task write the same .asc file.
+        val javadocJar = tasks.register<Jar>("${name}JavadocJar") {
+            archiveBaseName.set(artifactId)
+            archiveClassifier.set("javadoc")
+            from(rootProject.file("README.md"))
+        }
+        artifact(javadocJar)
+        if (!signingKey.isNullOrBlank()) {
+            signing.sign(this)
         }
     }
 }
